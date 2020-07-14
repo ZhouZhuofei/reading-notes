@@ -1,5 +1,19 @@
 # Mathematical Preliminaries and Error Analysis
 
+***
+
+***
+
+
+
+[TOC]
+
+***
+
+***
+
+
+
 ## 1.1 review of calculus
 
 ### limits and continuity
@@ -10,7 +24,7 @@
 
 #### Definition 1.1
 
-A function f defined on a set X of real numbers has a limit L at x0, written 
+A function f defined on a set X of real numbers has a limit L at x~0~, written 
 $$
 \lim_{x \to x_{0}} f(x) = L
 $$
@@ -23,7 +37,7 @@ $$
 
 #### Definition 1.2
 
-Let  f be a function defined on a set of *X* of real numbers and x0 ∈ X, Then f is continuous at x0 if
+Let  f be a function defined on a set of *X* of real numbers and x~0~ ∈ X, Then f is continuous at x~0~ if
 $$
 \lim_{x \to x_{0}}f(x) = f(x_{0})
 $$
@@ -37,7 +51,7 @@ $$
 let \quad \{x_{n}\}_{n=1}^{\infty} 
 $$
 
-be an infinite sequence of real numbers.This sequence has the **limit** *x* (**converges to** *x*) if, for any ε > 0 there exists a positive integer *N*(ε) such that |*xn* − *x*| < ε, whenever *n* > *N*(ε). The notation
+be an infinite sequence of real numbers.This sequence has the **limit** *x* (**converges to** *x*) if, for any ε > 0 there exists a positive integer *N*(ε) such that |*x~n~* − *x*| < ε, whenever *n* > *N*(ε). The notation
 $$
 \lim_{n \to \infty}x_{n} = x,\quad x_{n} \to x \quad as \quad n \to \infty
 $$
@@ -47,10 +61,10 @@ means the sequence converges to x.
 
 #### Theorem 1.4
 
-If f is a function defined on a set *X* of real numbers and *x*0 ∈ *X*, then the following statements are equivalent:
+If f is a function defined on a set *X* of real numbers and *x*~0~ ∈ *X*, then the following statements are equivalent:
 
-- **a** : f is continuous at x0;
-- **b** : if x 's sequence in set of X converges to x0, then limit n to infty f(xn) = f(x0).
+- **a** : f is continuous at x~0~;
+- **b** : if x 's sequence in set of X converges to x~0~, then limit n to infty f(x~n~) = f(x~0~).
 
 ***
 
@@ -60,17 +74,17 @@ If f is a function defined on a set *X* of real numbers and *x*0 ∈ *X*, then t
 
 #### Definition 1.5
 
-Let f be a function defined in an open interval containing *x*0 . The function f is **differentiable** at *x*0 if
+Let f be a function defined in an open interval containing *x*~0~ . The function f is **differentiable** at *x*~0~ if
 $$
 f'(x_{0}) = \lim_{x \to x_{0}}\frac{f(x) - f(x_{0})}{x - x_{0}}
 $$
-exists. The number f ′ (*x*0 ) is called the **derivative** of f at *x*0 . A function that has a derivative at each number in a set *X* is **differentiable on** *X*.
+exists. The number f ′ (*x*~0~ ) is called the **derivative** of f at *x*~0~ . A function that has a derivative at each number in a set *X* is **differentiable on** *X*.
 
 ***
 
 #### Theorem 1.6 
 
-If the function f is differentiable at *x*0, then f is continuous at *x*0.
+If the function f is differentiable at *x*~0~, then f is continuous at *x*~0~.
 
 ***
 
@@ -91,11 +105,11 @@ $$
 
 #### Theorem 1.9 Extreme Value Theorem
 
-If f ∈ *C*[*a*,*b*], then *c*1, *c*2 ∈ [*a*,*b*] exist with f(*c*1) ≤ f(*x*) ≤ f(*c*2), for all *x* ∈ [*a*,*b*]. In addition, if f is differentiable on (*a*, *b*), then the numbers *c*1 and *c*2 occur either at the endpoints of [*a*, *b*] or where f ′ is zero.
+If f ∈ *C*[*a*,*b*], then *c*~1~, *c*~2~∈ [*a*,*b*] exist with f(*c*~1~) ≤ f(*x*) ≤ f(*c*~2~), for all *x* ∈ [*a*,*b*]. In addition, if f is differentiable on (*a*, *b*), then the numbers *c*~1~ and *c*~2~ occur either at the endpoints of [*a*, *b*] or where f ′ is zero.
 
 #### Theorem 1.10 Generalized Rolle's Theorem
 
-Suppose f ∈ *C*[*a*, *b*] is *n* times differentiable on (*a*, *b*). If f (*x*) = 0 at the *n* + 1 distinct numbers*a*≤*x*0 <*x*1 <...<*x**n* ≤*b*,thenanumber*c*in(*x*0,*xn*),and hence in (*a*,*b*), exists with
+Suppose f ∈ *C*[*a*, *b*] is *n* times differentiable on (*a*, *b*). If f (*x*) = 0 at the *n* + 1 distinct numbers*a*≤*x*~0~ <*x*~1~ <...<*x*~n~ ≤*b*,thenanumber*c*in(*x*~0~, *x~n~*),and hence in (*a*,*b*), exists with
 $$
 f^{(n)}(c) = 0
 $$
@@ -126,7 +140,7 @@ Satisfy :
 $$
 a=x_{0}\leq x_{1}\leq x_{2}\leq...\leq x_{n} = b.\quad where \quad \Delta x_{i} = x_{i} - x_{i-1}.
 $$
-for each i = 1,2,...,n.and arbiterily chosen z ,let:
+for each i = 1,2,...,n.and arbiterily chosen z~i~ ,let:
 $$
 z_{i} \in [x_{i-1},x_{i}].
 $$
@@ -196,10 +210,10 @@ $$
 
 #### Definition 1.17
 
-Suppose that *E*0 > 0 denotes an error introduced at some stage in the calculations and *E**n* represents the magnitude of the error after *n* subsequent operations.:
+Suppose that *E*~0~ > 0 denotes an error introduced at some stage in the calculations and *E~n~* represents the magnitude of the error after *n* subsequent operations.:
 
-* If *E**n* ≈ *CnE*0, where *C* is a constant independent of *n*, then the growth of error is said to be **linear**
-*  If *E**n* ≈ *C**n**E*0, for some *C* > 1, then the growth of error is called **exponential**.
+* If *E~n~* ≈ *CnE*0, where *C* is a constant independent of *n*, then the growth of error is said to be **linear**
+*  If *E~n~* ≈ *C**n**E*0, for some *C* > 1, then the growth of error is called **exponential**.
 
 ***
 
@@ -213,7 +227,7 @@ $$
 $$
 |\alpha_{n}-\alpha|\leq K|\beta_{n}|, for \quad large \: n,
 $$
-then we say that {α*n*}∞*n*=1 converges to α with **rate, or order, of convergence** *O*(β*n*). (This
+then we say that {α*~n~*}∞*n*=1 converges to α with **rate, or order, of convergence** *O*(β*n*). (This
 
 expression is read “big oh of β*n*”.) It is indicated by writing α*n* = α + *O*(β*n)
 
