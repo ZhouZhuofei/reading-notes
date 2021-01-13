@@ -222,6 +222,46 @@ class C256Point(EllipticPoint):
                 return b'\x03' + self.x.num.to_bytes(32, 'big')
         else:
             return b'\x04'+self.x.num.to_bytes(32, 'big') + self.y.num.to_bytes(32, 'big')
+    
+    @classmethod
+    def parse(self, sec_bin):
+        """
+        return a Point object from a SEC binary
+        """
+        if sec_bin[0] == 4:
+            x = int.from_bytes(sec_bin[1:33], 'big')
+            y = int.from_bytes(sec_bin[33:65], 'big')
+            return C256Point(x=x, y=y)
+        is_even = sec_bin[0] == 2
+        x = C256Field(int.from_bytes(sec_bin[1:], 'big'))
+        #right side of the equation y^2 = x^3 + 7
+        alpha = x**3 + C256Field(B)
+        beta = alpha.sqrt()
+        if beta.num % 2 == 0:
+            even_beta = beta
+            odd_beta = C256Field(P - beta.num)
+        else:
+            even_beta = C256Field(P - beta.num)
+            odd_beta = beta
+
+        if is_even:
+            return C256Point(x, even_beta)
+        else:
+            return C256Point(x, odd_beta)
+    
+    def hash160(self, compressed=True):
+        return hashlib.new('ripemd160', hashlib.sha256(self.sec(compressed)).digest()).digest()
+    
+    def address(self, compressed=True, testnet=False):
+        """Return address string"""
+        h160 = self.hash160(compressed)
+        if testnet:
+            prefix = b'\x6f'
+        else:
+            prefix = b'\x00'
+
+
+        return b58encode_check(prefix + h160).decode("utf-8")
 
 
 class Signature:
@@ -233,6 +273,22 @@ class Signature:
 
     def __repr__(self):
         return 'Signature({:x},{:x})'.format(self.r, self.s) 
+
+    def der(self):
+        rbin = self.r.to_bytes(32, 'big')
+        rbin = rbin.lstrip(b'\x00')
+        if rbin[0] & 0x80:
+            rbin = b'\x00' + rbin
+        result = bytes([2, len(rbin)]) + rbin
+        sbin = self.s.to_bytes(32, 'big')
+        sbin = sbin.lstrip(b'\x00')
+        if sbin[0] & 0x80:
+            sbin = b'\x00' + sbin
+        result += bytes([2, len(sbin)]) + sbin
+        return bytes([0x30, len(result)]) + result
+
+
+
 
 G = C256Point(Gx, Gy)
 
@@ -275,6 +331,26 @@ class PrivateKey:
             k = hmac.new(k, v + b'\x00', s256).digest()
             v = hmac.new(k, v, s256).digest()
 
-      #Sec 序列化
+    def wif(self, compressed=True, testnet=False):
+        secret_bytes = self.secret.to_bytes(32, 'big')
+        if testnet:
+            prefix = b'\xef'
+        else:
+            prefix = b'\x80'
+        
+        if compressed:
+            suffix = b'\x01'
+        else:
+            suffix = b''
+        
+        return b58encode_check(prefix + secret_bytes + suffix).decode("utf-8")
+
+
     
 
+
+#x = bytes.fromhex('7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d')
+#print(b58encode(x).decode('utf-8'))
+#priv = PrivateKey(5003)
+#print(priv.point.address(compressed=True, testnet=True))
+#print(priv.wif(compressed=True, testnet=True))
