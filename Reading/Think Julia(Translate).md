@@ -2312,3 +2312,305 @@ end
 
 Julia处理大写字母和小写字母的方式与常人不同。所有的大写字母都在小写字母之前，所以:
 
+# Array
+本章介绍Julia最有用的内置类型之一——数组。您还将了解对象，以及当同一个对象有多个名称时会发生什么。
+
+## An Array is a Sequence
+
+与字符串一样，数组是一个值序列。在字符串中，值是字符;在数组中，它们可以是任何类型。数组中的值称为元素，有时也称为项。创建新数组有几种方法;最简单的方法是将元素括在方括号([])中:
+
+```julia
+[10, 20, 30, 40]
+["crunchy frog", "ram bladder", "lark vomit"]
+```
+第一个示例是一个由4个整数组成的数组。第二个是一个包含三个字符串的数组。数组的元素不必是相同的类型。下面的数组包含了一个字符串、一个浮点数、一个整数和另一个数组:
+
+```julia
+["spam", 2.0, 5, [10, 20]]
+```
+另一个数组中的数组是嵌套的。
+
+不包含任何元素的数组称为空数组;您可以用空括号[]创建一个。
+
+如您所料，可以将数组值赋给变量:
+
+```julia
+julia> cheeses = ["Cheddar", "Edam", "Gouda"];
+
+julia> numbers = [42, 123];
+
+julia> empty = [];
+
+julia> print(cheeses, " ", numbers, " ", empty)
+["Cheddar", "Edam", "Gouda"] [42, 123] Any[]
+```
+函数typeof可以用来找出数组的类型:
+```julia
+julia> typeof(cheeses)
+Array{String,1}
+julia> typeof(numbers)
+Array{Int64,1}
+julia> typeof(empty)
+Array{Any,1}
+```
+数组的类型在花括号之间指定，由类型和数字组成。数字表示尺寸。数组empty包含类型为Any的值。，也就是说，它可以保存所有类型的值。
+
+## Array are mutable
+访问数组元素的语法与访问字符串字符的语法相同-括号操作符。括号内的表达式指定索引。记住，索引从1开始:
+```julia
+julia> cheeses[1]
+"Cheddar"
+```
+与字符串不同，数组是可变的。当方括号操作符出现在赋值操作符的左侧时，它标识将被赋值的数组元素
+```julia
+julia> numbers[2] = 5
+5
+julia> print(numbers)
+[42, 5]
+```
+## Traversing an Array
+遍历数组元素最常见的方法是使用for循环。语法与字符串相同:
+```julia
+for cheese in cheeses
+    println(cheese)
+end
+```
+如果您只需要读取数组的元素，那么这将非常有效。但是如果你想写入或更新元素，你需要索引。一种常见的方法是使用内置函数`eachindex`:
+```julia
+for i in eachindex(numbers)
+    numbers[i] = numbers[i] * 2
+end
+```
+这个循环遍历数组并更新每个元素。length返回数组中元素的个数。每次循环i都会获取下一个元素的索引。主体中的赋值语句使用i读取元素的旧值并赋值给新值。
+
+对于空数组的for循环永远不会运行数组体
+```julia
+for x in []
+    println("This can never happens.")
+end
+```
+尽管一个数组可以包含另一个数组，但嵌套的数组仍然算作单个元素。这个数组的长度是4
+```julia
+["spam", 1, ["Brie", "Roquefort", "Camembert"], [1, 2, 3]]
+```
+## Array Slices
+slice操作符也适用于数组:
+```julia
+julia> t = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+julia> print(t[1:3])
+['a', 'b', 'c']
+julia> print(t[3:end])
+['c', 'd', 'e', 'f']
+```
+切片操作符[:]复制整个数组:
+```julia
+julia> print(t[:])
+['a', 'b', 'c', 'd', 'e', 'f']
+```
+因为数组是可变的，所以在执行修改数组的操作之前先做一个拷贝通常是很有用的。
+
+赋值操作符左侧的切片操作符可以更新多个元素
+```julia
+julia> t[2:3] = ['x', 'y'];
+
+julia> print(t)
+['a', 'x', 'y', 'd', 'e', 'f']
+```
+## Array Library
+Julia提供了操作数组的函数。例如,`push!`在数组的末尾添加新元素
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> push!(t, 'd');
+
+julia> print(t)
+['a', 'b', 'c', 'd']
+```
+append!将第二个数组的元素添加到第一个数组的末尾:
+```julia
+julia> t1 = ['a', 'b', 'c'];
+
+julia> t2 = ['d', 'e'];
+
+julia> append!(t1, t2);
+
+julia> print(t1)
+['a', 'b', 'c', 'd', 'e']
+```
+这个例子没有修改t2。
+
+`sort!`从低到高排列数组中的元素:
+```julia
+julia> t = ['d', 'c', 'e', 'b', 'a'];
+
+julia> sort!(t);
+
+julia> print(t)
+['a', 'b', 'c', 'd', 'e']
+```
+sort returns a copy of the elements of the array in order:
+```julia
+julia> t1 = ['d', 'c', 'e', 'b', 'a'];
+
+julia> t2 = sort(t1);
+
+julia> print(t1)
+['d', 'c', 'e', 'b', 'a']
+julia> print(t2)
+['a', 'b', 'c', 'd', 'e']
+```
+## Map, Filter and Reduce
+要将数组中的所有数字相加，可以使用这样的循环:
+```julia
+function addall(t)
+    total = 0
+    for x in t
+        total += x
+    end
+    total
+end
+```
+当循环运行时，total累积元素的总和;以这种方式使用的变量有时称为累加器。
+
+将数组元素相加是一个非常常见的操作，Julia将其作为一个内置函数sum提供:
+```julia
+julia> t = [1, 2, 3, 4];
+
+julia> sum(t)
+10
+```
+像这样将一系列元素组合成单个值的操作有时称为reduce操作。
+
+通常，您希望遍历一个数组，同时构建另一个数组。例如，下面的函数接受一个字符串数组，并返回一个包含大写字符串的新数组:
+
+```julia
+function capitalizeall(t)
+    res = []
+    for s in t
+        push!(res, uppercase(s))
+    end
+    res
+end
+```
+res被初始化为空数组;每次执行循环时，都要添加下一个元素。res是另一种累加器。
+
+像capitaleall这样的操作有时被称为map，因为它将一个函数(在本例中为大写)“映射”到序列中的每个元素上。
+
+另一个常见的操作是从数组中选择一些元素并返回一个子数组。例如，下面的函数接受一个字符串数组，并返回一个只包含大写字符串的数组:
+```julia
+function onlyupper(t)
+    res = []
+    for s in t
+        if s == uppercase(s)
+            push!(res, s)
+        end
+    end
+    res
+end
+```
+像onlypper这样的操作称为过滤器，因为它选择一些元素并过滤掉其他元素。
+
+大多数常见的数组操作都可以表示为map、filter和reduce的组合。
+
+## Dot Syntax
+对于每一个像^这样的二进制操作符，都有一个相应的点运算符。^，它会被自动定义为在数组中逐元素执行^。例如，没有定义[1,2,3]^3，而是定义[1,2,3].^3被定义为计算元素级结果[1^3,2^3,3^3]:
+```julia
+julia> print([1, 2, 3] .^ 3)
+[1, 8, 27]
+```
+任何Julia函数f都可以应用到任何带有点语法的数组中。例如，要将字符串数组大写，不需要显式循环
+```julia
+julia> t = uppercase.(["abc", "def", "ghi"]);
+
+julia> print(t)
+["ABC", "DEF", "GHI"]
+```
+这是一种创建映射的优雅方式。函数capitaleall可以通过一行代码实现:
+```julia
+function capitalizeall(t)
+    uppercase.(t)
+end
+```
+## Deleting (Inserting) Elements
+有几种方法可以从数组中删除元素。如果你知道你想要的元素的索引，你可以使用splice!
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> splice!(t, 2)
+'b': ASCII/Unicode U+0062 (category Ll: Letter, lowercase)
+julia> print(t)
+['a', 'c']
+```
+`splice!`修改数组并返回被删除的元素。
+
+`pop!`删除并返回最后一个元素
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> pop!(t)
+'c': ASCII/Unicode U+0063 (category Ll: Letter, lowercase)
+julia> print(t)
+['a', 'b']
+```
+`popfirst!`删除并返回第一个元素:
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> popfirst!(t)
+'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)
+julia> print(t)
+['b', 'c']
+```
+`pushfirst!`和`push!`在数组的开头和末尾分别插入一个元素。
+
+如果不需要删除的值，可以使用`deleteat!`函数:
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> print(deleteat!(t, 2))
+['a', 'c']
+```
+The function insert! inserts an element at a given index:
+```julia
+julia> t = ['a', 'b', 'c'];
+
+julia> print(insert!(t, 2, 'x'))
+['a', 'x', 'b', 'c']
+```
+## Arrays and Strings
+字符串是字符序列，数组是值序列，但字符数组与字符串不同。要将字符串转换为字符数组，可以使用`collect`函数:
+```julia
+julia> t = collect("spam");
+
+julia> print(t)
+['s', 'p', 'a', 'm']
+```
+`collect`函数将一个字符串或另一个序列分解为单个元素。
+
+如果你想把一个字符串分解成单词，你可以使用`split`函数:
+```julia
+julia> t = split("pining for the fjords");
+
+julia> print(t)
+SubString{String}["pining", "for", "the", "fjords"]
+```
+一个称为定界符的可选参数指定使用哪些字符作为单词边界。使用连字符作为分隔符的示例如下:
+```julia
+julia> t = split("spam-spam-spam", '-');
+
+julia> print(t)
+SubString{String}["spam", "spam", "spam"]
+```
+`join`是`split`的逆函数。它接受一个字符串数组并连接元素:
+```julia
+julia> t = ["pining", "for", "the", "fjords"];
+
+julia> s = join(t, ' ')
+"pining for the fjords"
+```
+在这种情况下，分隔符是一个空格字符。要连接不带空格的字符串，不需要指定分隔符。
+
+
+
+
