@@ -2612,5 +2612,330 @@ julia> s = join(t, ' ')
 在这种情况下，分隔符是一个空格字符。要连接不带空格的字符串，不需要指定分隔符。
 
 
+# Dictionaries
+本章介绍另一种内置类型，称为字典。
+
+## A Dictionaries is a Mapping
+字典类似于数组，但更一般。在数组中，下标必须是整数;在字典里，它们(几乎)可以是任何类型。
+
+字典包含一组称为键的索引和一组值。每个键都与单个值相关联。键和值的关联称为键-值对，有时也称为项。
+
+在数学语言中，字典表示从键到值的映射，因此也可以说每个键“映射”到一个值。例如，我们将构建一个字典，将英语单词映射到西班牙语单词，因此键和值都是字符串。
+
+函数Dict创建一个没有条目的新字典。因为Dict是一个内置函数的名称，所以你应该避免使用它作为变量名。
+
+```julia
+julia> eng2sp = Dict()
+Dict{Any,Any} with 0 entries
+```
+这种字典由花括号括起来:键是Any类型的，值也是Any类型的。字典是空的。要向字典中添加项，可以使用方括号:
+```julia
+julia> eng2sp["one"] = "uno";
+```
+这一行创建了一个从键“one”映射到值“uno”的项。再次打印字典，会看到键值对，键值之间有一个箭头=>
+```julia
+julia> eng2sp
+Dict{Any,Any} with 1 entry:
+  "one" => "uno"
+```
+这种输出格式也是一种输入格式。例如，您可以创建一个包含三个条目的新字典:
+```julia
+julia> eng2sp = Dict("one" => "uno", "two" => "dos", "three" => "tres")
+Dict{String,String} with 3 entries:
+  "two"   => "dos"
+  "one"   => "uno"
+  "three" => "tres"
+
+```
+所有的初始键和值都是字符串，因此将创建一个Dict{String,String}。
+但这不是问题，因为字典的元素从来不会用整数索引进行索引。相反，你可以使用键来查找相应的值:
+```julia
+julia> eng2sp["two"]
+"dos"
+```
+键“two”总是映射到值“dos”，所以项的顺序无关紧要。
+
+如果键不在字典中，就会得到一个异常
+```julia
+julia> eng2sp["four"]
+ERROR: KeyError: key "four" not found
+```
+长度函数适用于字典;它返回键值对的数量:
+
+```julia
+julia> length(eng2sp)
+3
+```
+函数keys返回一个包含字典中的键值的集合:
+
+```julia
+julia> ks = keys(eng2sp);
+
+julia> print(ks)
+["two", "one", "three"]
+```
+现在，您可以使用∈运算符来查看某项是否作为键出现在字典中:
+```julia
+julia> "one" ∈ ks
+true
+julia> "uno" ∈ ks
+false
+```
+要查看某个值是否以值的形式出现在字典中，可以使用返回值集合的函数值，然后使用∈运算符
+```julia
+julia> vs = values(eng2sp);
+
+julia> "uno" ∈ vs
+true
+```
+∈运算符对数组和字典使用不同的算法。对于数组，它按顺序搜索数组中的元素，就像搜索一样。数组越长，搜索时间越长。
+
+对于字典，Julia使用了一种称为哈希表的算法，该算法有一个显著的特性:无论字典中有多少项，∈运算符都需要大约相同的时间
+
+## Dictionary as a Collection of Counters
+假设给你一个字符串，你想计算每个字母出现了多少次。有几种方法可以做到这一点:
+
+您可以创建26个变量，每个变量对应字母表中的每个字母。然后可以遍历该字符串，并对每个字符递增相应的计数器(可能使用链式条件)。
+
+您可以创建一个包含26个元素的数组。然后，您可以将每个字符转换为数字(使用内置函数Int)，使用数字作为数组的索引，并增加相应的计数器。
+
+您可以创建一个以字符作为键，以计数器作为相应值的字典。第一次看到字符时，您将向字典添加一个项。在此之后，您将增加现有项的值。
+
+这些选项都执行相同的计算，但它们都以不同的方式实现该计算。
+
+实现是一种执行计算的方式;有些实现比其他的更好。例如，字典实现的一个优点是，我们不需要提前知道哪些字母出现在字符串中，我们只需要为出现的字母腾出空间。
+
+下面是代码可能的样子:
+
+```julia
+function histogram(s)
+    d = Dict()
+    for c in s
+        if c ∉ keys(d)
+            d[c] = 1
+        else
+            d[c] += 1
+        end
+    end
+    d
+end
+```
+函数的名称是histogram，这是一个用于计数器(或频率)集合的统计术语。
+
+函数的第一行创建了一个空字典。`for`循环遍历字符串。每次循环中，如果字符`c`不在字典中，则使用键`c`和初始值1创建一个新项(因为我们已经看到过这个字母一次)。如果`c`已经在字典中，则增加`d[c]`。
+
+下面是它的工作原理
+```julia
+julia> h = histogram("brontosaurus")
+Dict{Any,Any} with 8 entries:
+  'n' => 1
+  's' => 2
+  'a' => 1
+  'r' => 2
+  't' => 1
+  'o' => 2
+  'u' => 2
+  'b' => 1
+
+```
+`histogram`表明字母`a`和`b`只出现一次;`o`出现两次，以此类推。
+
+字典有一个名为`get`的函数，它接受一个键和一个默认值。如果键出现在字典中，`get`返回相应的值;否则返回默认值。例如
+
+```julia
+julia> h = histogram("a")
+Dict{Any,Any} with 1 entry:
+  'a' => 1
+julia> get(h, 'a', 0)
+1
+julia> get(h, 'b', 0)
+0
+```
+## Looping and Dictionaries
+
+可以在for语句中遍历字典的键。例如，printhist打印每个键和相应的值
+```julia
+function printhist(h)
+    for c in keys(h)
+        println(c, " ", h[c])
+    end
+end
+```
+输出是这样的:
+```julia
+julia> h = histogram("parrot");
+
+julia> printhist(h)
+a 1
+r 2
+p 1
+o 1
+t 1
+```
+同样，键并没有特定的顺序。要按已排序的顺序遍历键值，可以结合`sort`和`collect`:
+```julia
+julia> for c in sort(collect(keys(h)))
+           println(c, " ", h[c])
+       end
+a 1
+o 1
+p 1
+r 2
+t 1
+```
+## Reverse Lookup
+给定字典d和键k，很容易找到对应的值v = d[k]。这个操作称为查找。
+
+但是如果你有v，你想求k呢?您有两个问题:首先，可能有多个键映射到值v，这取决于应用程序，您可能可以选择一个键，或者您可能必须创建一个包含所有键的数组。其次，没有简单的语法来进行反向查找;你必须搜索。
+
+下面是一个函数，它接受一个值，并返回映射到该值的第一个键:
+```julia
+function reverselookup(d, v)
+    for k in keys(d)
+        if d[k] == v
+            return k
+        end
+    end
+    error("LookupError")
+end
+```
+这个函数是搜索模式的另一个例子，但它使用了一个我们以前没有见过的函数，error。error函数用于产生errorrexception，中断正常的控制流。在本例中，它有消息“LookupError”，表明一个键不存在。
+
+如果我们到达循环的末尾，这意味着v没有作为一个值出现在字典中，因此我们抛出一个异常。
+
+下面是一个成功的反向查找示例
+```julia
+julia> h = histogram("parrot");
+
+julia> key = reverselookup(h, 2)
+'r': ASCII/Unicode U+0072 (category Ll: Letter, lowercase)
+```
+和一个不成功的:
+```julia
+julia> key = reverselookup(h, 3)
+ERROR: LookupError
+```
+生成异常时的效果与Julia抛出异常时是一样的:它打印一个stacktrace和一个错误消息。
+
+Julia提供了一种优化的反向查找方法:
+
+## Dictionaries and Arrays
+数组可以作为字典中的值出现。例如，如果给你一个字典，从字母映射到频率，你可能想要倒转它;也就是说，创建一个从频率映射到字母的字典。由于可能有几个字母具有相同的频率，所以倒字典中的每个值都应该是一个字母数组。
+
+这是一个对字典进行倒转的函数
+```julia
+function invertdict(d)
+    inverse = Dict()
+    for key in keys(d)
+        val = d[key]
+        if val ∉ keys(inverse)
+            inverse[val] = [key]
+        else
+            push!(inverse[val], key)
+        end
+    end
+    inverse
+end
+```
+每次循环中，`key`都会从d中获取一个`key`，而`val`会获取相应的值。如果`val`不是逆函数，那就意味着我们以前没有见过它，因此我们创建一个新项，并使用`singleton`(包含单个元素的数组)初始化它。否则，我们以前见过这个值，所以我们将相应的键添加到数组中。
+
+下面是一个例子
+```julia
+julia> hist = histogram("parrot");
+
+julia> inverse = invertdict(hist)
+Dict{Any,Any} with 2 entries:
+  2 => ['r']
+  1 => ['a', 'p', 'o', 't']
+```
+
+## Global Variables
+
+在前面的例子中，已知是在函数外部创建的，所以它属于一个叫做Main的特殊框架。Main中的变量有时被称为全局变量，因为它们可以从任何函数访问。局部变量在函数结束时消失，与此不同，全局变量从一个函数调用持续到下一个函数调用。
+
+通常使用全局变量作为标志;也就是说，指示(“标记”)条件是否为真的布尔变量。例如，一些程序使用一个名为`verbose`的标志来控制输出的详细程度:
+```julia
+verbose = true
+
+function example1()
+    if verbose
+        println("Running example1")
+    end
+end
+```
+如果您试图重新分配一个全局变量，您可能会感到惊讶。下面的例子用来跟踪函数是否被调用:
+```julia
+been_called = false
+
+function example2()
+    been_called = true         # WRONG
+end
+```
+但是如果你运行它，你会看到been_called的值没有改变。问题是example2创建了一个名为been_called的新的局部变量。局部变量在函数结束时消失，对全局变量没有影响。
+
+要在函数中重新分配全局变量，必须在使用它之前声明该变量为global:
+```julia
+been_called = false
+
+function example2()
+    global been_called
+    been_called = true
+end
+```
+global语句告诉解释器:“在这个函数中，当我说been_called时，我指的是全局变量;不要创建本地的。”
+
+下面是一个尝试更新全局变量的例子:
+```julia
+count = 0
+
+function example3()
+    count = count + 1          # WRONG
+end
+```
+如果你运行它，你会得到
+```julia
+julia> example3()
+ERROR: UndefVarError: count not defined
+```
+Julia假设count是局部的，在这个假设下，你在写之前先阅读它。同样，解决方案是声明count为全局的
+```julia
+count = 0
+
+function example3()
+    global count
+    count += 1
+end
+```
+如果一个全局变量指向一个可变的值，你可以修改这个值而不必声明这个变量为global:
+```julia
+known = Dict(0=>0, 1=>1)
+
+function example4()
+    known[2] = 1
+end
+```
+因此，你可以添加、删除和替换全局数组或字典的元素，但如果你想重新分配变量，你必须声明它是全局的
+```julia
+known = Dict(0=>0, 1=>1)
+
+function example5()
+    global known
+    known = Dict()
+end
+```
+出于性能考虑，您应该声明一个全局变量常量。您不能再重新分配变量，但如果它指向一个可变的值，您可以修改该值。
+
+```julia
+const known = Dict(0=>0, 1=>1)
+
+function example4()
+    known[2] = 1
+end
+```
+
+
+
+
+
 
 
