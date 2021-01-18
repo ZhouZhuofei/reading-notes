@@ -284,4 +284,313 @@ end
 
 因为元组是不可变的，所以它们不提供sort!和反向!，它修改现有的数组。但是Julia提供了内置函数sort，该函数接受一个数组并以已排序的顺序返回一个具有相同元素的新数组，而reverse函数接受任何序列并以相反的顺序返回相同类型的序列。
 
+# Files
+本章介绍将数据保存在永久存储中的“持久”程序的思想，并展示如何使用不同类型的永久存储，如文件和数据库。
+
+## persistence
+到目前为止，我们看到的大多数程序都是短暂的，因为它们运行很短的时间并产生一些输出，但是当它们结束时，它们的数据就消失了。如果您再次运行该程序，它将以全新的方式开始。
+
+其他程序是持久的:它们运行很长时间(或一直运行);他们至少将部分数据保存在永久存储中(比如硬盘);如果它们关闭并重新启动，它们就会重新开始。
+
+持久性程序的例子包括操作系统和web服务器，它们几乎在电脑开机时就运行，一直在运行，等待网络上的请求。
+
+程序维护数据的最简单方法之一是读写文本文件。我们已经见过读取文本文件的程序;在本章中，我们将看到编写它们的程序。
+
+另一种方法是将程序的状态存储在数据库中。在本章中，我还将介绍如何使用一个简单的数据库。
+## Reading and writing
+文本文件是存储在硬盘驱动器或闪存等永久介质上的字符序列。我们看到了如何在阅读单词列表中打开和读取文件。
+
+要写一个文件，你必须以模式“w”作为第二个参数打开它:
+```julia
+julia> fout = open("output.txt", "w")
+IOStream(<file output.txt>)
+```
+如果文件已经存在，以写模式打开它会清除旧的数据并重新开始，所以要小心!如果该文件不存在，则创建一个新的文件。open函数返回一个file对象，而write函数将数据放入文件中。
+```julia
+julia> line1 = "This here's the wattle,\n";
+
+julia> write(fout, line1)
+24
+```
+返回值是写入的字符数。file对象跟踪它的位置，因此如果再次调用write，它会将新数据添加到文件的末尾。
+```julia
+julia> line2 = "the emblem of our land.\n";
+
+julia> write(fout, line2)
+24
+```
+当你写完之后，你应该关闭文件。
+```julia
+julia> close(fout)
+```
+如果你不关闭文件，它会在程序结束时为你关闭。
+
+## Formatting
+write的参数必须是一个字符串，所以如果我们想在一个文件中放入其他值，我们必须将它们转换为字符串。最简单的方法是使用`string`或字符串插值:
+```julia
+julia> fout = open("output.txt", "w")
+IOStream(<file output.txt>)
+julia> write(fout, string(150))
+3
+```
+另一种选择是使用print(ln)函数族。
+```julia
+julia> camels = 42
+42
+julia> println(fout, "I have spotted $camels camels.")
+```
+## Filenames and Paths
+文件被组织成目录(也称为“文件夹”)。每个运行的程序都有一个“当前目录”，这是大多数操作的默认目录。例如，当您打开一个文件进行读取时，Julia会在当前目录中查找它。
+
+pwd函数返回当前目录的名称:
+```julia
+julia> cwd = pwd()
+"/home/ben"
+```
+cwd代表“当前工作目录”。本例中的结果是/home/ben，这是一个名为ben的用户的主目录。
+像“/home/ben”这样标识文件或目录的字符串称为路径。
+
+像memo.txt这样的简单文件名也被认为是一个路径，但它是一个相对路径，因为它与当前目录相关。如果当前目录为“/home/ben”，文件名“memo.txt”将指向“/home/ben/memo.txt”
+
+以/开头的路径不依赖于当前目录;它被称为绝对路径。要找到文件的绝对路径，你可以使用abspath:
+
+```julia
+julia> abspath("memo.txt")
+"/home/ben/memo.txt"
+```
+Julia提供了其他用于处理文件名和路径的函数。例如，ispath检查一个文件或目录是否存在:
+```julia
+julia> ispath("memo.txt")
+true
+```
+
+如果它存在，isdir会检查它是否是一个目录:
+```julia
+julia> isdir("memo.txt")
+false
+julia> isdir("/home/ben")
+true
+```
+类似地，`isfile`检查它是否是一个文件。
+
+`readdir`返回给定目录中的文件(和其他目录)的数组:
+
+```julia
+julia> readdir(cwd)
+3-element Array{String,1}:
+ "memo.txt"
+ "music"
+ "photos"
+ ```
+ 为了演示这些函数，下面的示例“遍历”一个目录，打印所有文件的名称，并在所有目录上递归地调用自己。
+ ```julia
+ function walk(dirname)
+    for name in readdir(dirname)
+        path = joinpath(dirname, name)
+        if isfile(path)
+            println(path)
+        else
+            walk(path)
+        end
+    end
+end
+```
+joinpath接受目录和文件名，并将它们连接到一个完整的路径中。
+## Catching Exceptions
+当您尝试读写文件时，许多事情都可能出错。如果你试图打开一个不存在的文件，你会得到一个SystemError:
+```julia
+julia> fin = open("bad_file")
+ERROR: SystemError: opening file "bad_file": No such file or directory
+```
+如果你没有权限访问文件:
+```julia
+julia> fout = open("/etc/passwd", "w")
+ERROR: SystemError: opening file "/etc/passwd": Permission denied
+```
+为了避免这些错误，您可以使用像ispath和isfile这样的函数，但是检查所有的可能性将花费大量的时间和代码。
+
+继续尝试(并在出现问题时处理问题)更容易，这正是try语句所做的。语法类似于if语句:
+```julia
+try
+    fin = open("bad_file.txt")
+catch exc
+    println("Something went wrong: $exc")
+end
+```
+Julia首先执行try子句。如果一切顺利，它将跳过catch子句并继续执行。如果发生异常，它将跳出try子句并运行catch子句。
+
+用try语句处理异常被称为捕获异常。在本例中，except子句打印一条错误消息，这不是很有帮助。通常，捕获异常使您有机会修复问题，或再次尝试，或至少优雅地结束程序。
+
+在执行状态更改或使用文件等资源的代码中，通常在代码完成时需要完成清理工作(如关闭文件)。异常可能会使该任务复杂化，因为它们可能导致代码块在到达正常结束之前退出。finally关键字提供了一种在给定代码块退出时运行代码的方法，不管它是如何退出的:
+```julia
+f = open("output.txt")
+try
+    line = readline(f)
+    println(line)
+finally
+    close(f)
+end
+```
+函数close将始终被执行。
+## Databases
+数据库是为存储数据而组织起来的文件。许多数据库就像字典一样组织，它们从键映射到值。数据库和字典的最大区别在于数据库在磁盘(或其他永久存储)上，所以它在程序结束后仍然存在。
+
+ThinkJulia提供了一个接口到GDBM (GNU dbm)创建和更新数据库文件。作为示例，我将创建一个包含图像文件标题的数据库。
+
+打开数据库类似于打开其他文件:
+```julia
+julia> using ThinkJulia
+
+julia> db = DBM("captions", "c")
+DBM(<captions>)
+```
+模式“c”意味着如果数据库还不存在，就应该创建它。结果是一个数据库对象，可以像字典一样使用(对于大多数操作)。
+
+当你创建一个新的项目，GDBM更新数据库文件:
+```julia
+julia> db["cleese.png"] = "Photo of John Cleese."
+"Photo of John Cleese."
+```
+当你访问其中一个条目时，GDBM读取文件:
+```julia
+julia> db["cleese.png"]
+"Photo of John Cleese."
+```
+如果你对一个已经存在的键进行另一个赋值，GDBM会替换旧的值:
+```julia
+julia> db["cleese.png"] = "Photo of John Cleese doing a silly walk."
+"Photo of John Cleese doing a silly walk."
+julia> db["cleese.png"]
+"Photo of John Cleese doing a silly walk."
+```
+有些函数以字典作为参数，如键和值，不能使用数据库对象。但是使用for循环进行迭代是可行的:
+```julia
+for (key, value) in db
+    println(key, ": ", value)
+end
+```
+和其他文件一样，你应该在完成后关闭数据库:
+```julia
+julia> close(db)
+```
+## Serialization
+GDBM的一个限制是键和值必须是字符串或字节数组。如果尝试使用任何其他类型，则会得到一个错误。
+
+序列化和反序列化函数可以提供帮助。它们将几乎所有类型的对象转换为适合存储在数据库中的字节数组(iobuffer)，然后再将字节数组转换回对象:
+```julia
+julia> using Serialization
+
+julia> io = IOBuffer();
+
+julia> t = [1, 2, 3];
+
+julia> serialize(io, t)
+24
+julia> print(take!(io))
+UInt8[0x37, 0x4a, 0x4c, 0x07, 0x04, 0x00, 0x00, 0x00, 0x15, 0x00, 0x08, 0xe2, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+```
+它的格式对人类读者来说并不明显;这是为了让Julia容易理解。反序列化重新构造对象:
+```julia
+julia> io = IOBuffer();
+
+julia> t1 = [1, 2, 3];
+
+julia> serialize(io, t1)
+24
+julia> s = take!(io);
+
+julia> t2 = deserialize(IOBuffer(s));
+
+julia> print(t2)
+[1, 2, 3]
+```
+序列化和反序列化对表示内存I/O流的iobuffer对象的读写操作。函数把!以字节数组的形式获取iobuffer的内容，并将iobuffer重置为初始状态。
+
+虽然新对象的值与旧对象相同，但(通常)它不是同一个对象:
+```julia
+julia> t1 == t2
+true
+julia> t1 ≡ t2
+false
+```
+换句话说，序列化和反序列化与复制对象具有相同的效果。
+
+您可以使用它在数据库中存储非字符串。
+
+## Command Objects
+大多数操作系统都提供命令行界面，也称为shell。shell通常提供导航文件系统和启动应用程序的命令。例如，在Unix中，您可以用cd更改目录，用ls显示目录的内容，并通过键入(例如)firefox启动web浏览器。
+
+任何你可以从shell启动的程序也可以使用command对象从Julia启动:
+```julia
+julia> cmd = `echo hello`
+`echo hello`
+```
+反引号用于分隔命令。
+
+函数run执行以下命令:
+```julia
+julia> run(cmd);
+hello
+```
+hello是echo命令的输出，发送到标准输出。run函数本身返回一个process对象，并在外部命令成功运行失败时抛出一个errorrexception。
+
+如果你想读取外部命令的输出，可以使用read:
+```julia
+julia> a = read(cmd, String)
+"hello\n"
+```
+例如，大多数Unix系统提供一个称为md5sum或md5的命令，它读取文件的内容并计算“校验和”。你可以在https://en.wikipedia.org/wiki/Md5上了解MD5。这个命令提供了一种有效的方法来检查两个文件是否有相同的内容。不同内容产生相同校验和的概率非常小(也就是说，在宇宙坍缩之前不太可能发生)。
+
+你可以使用command对象从Julia运行md5并得到结果:
+```julia
+julia> filename = "output.txt"
+"output.txt"
+julia> cmd = `md5 $filename`
+`md5 output.txt`
+julia> res = read(cmd, String)
+"MD5 (output.txt) = d41d8cd98f00b204e9800998ecf8427e\n"
+```
+## Modules
+假设您有一个名为“wc.jl"，代码如下:
+```julia
+function linecount(filename)
+    count = 0
+    for line in eachline(filename)
+        count += 1
+    end
+    count
+end
+
+print(linecount("wc.jl"))
+```
+如果运行这个程序，它将读取自身并输出文件中的行数，即9行。你也可以像这样在REPL中包含它:
+```julia
+julia> include("wc.jl")
+9
+```
+Julia引入了一些模块来创建单独的变量工作区，即新的全局作用域。
+
+模块以关键字module开始，以end结束。在您自己的顶级定义和其他人代码中的定义之间可以避免命名冲突。import允许控制来自其他模块的哪些名称是可见的，而export指定了你的哪些名称是公共的，也就是说，可以在模块外部使用，而不带模块名称的前缀。
+```julia
+module LineCount
+    export linecount
+
+    function linecount(filename)
+        count = 0
+        for line in eachline(filename)
+            count += 1
+        end
+        count
+    end
+end
+```
+模块LineCount对象提供了LineCount:
+```julia
+julia> using LineCount
+
+julia> linecount("wc.jl")
+11
+
+
+
 
