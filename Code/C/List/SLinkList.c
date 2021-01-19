@@ -93,6 +93,7 @@ int main(){
     char e;
     DataType a[] = {'A', 'B', 'C', 'D', 'E', 'F', 'H'};
     len = sizeof(a)/sizeof(a[0]);
+    //printf("%d", len);
     InitSList(&L);
     for(i=1;i<=len;i++){
         InsertSList(&L, i, a[i-1]);
