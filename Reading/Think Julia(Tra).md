@@ -590,7 +590,605 @@ julia> using LineCount
 
 julia> linecount("wc.jl")
 11
+```
+# Structs and Objects
 
+现在，您已经知道如何使用函数来组织代码，如何使用内置类型来组织数据。下一步是学习如何构建自己的类型来组织代码和数据。这是一个很大的话题;这需要几章的时间。
 
+## Composite Types
+我们已经使用了Julia的许多内置类型;现在我们将定义一个新类型。作为示例，我们将创建一个名为Point的类型，它表示二维空间中的一个点。
 
+在数学符号中，点通常写在括号中，用逗号分隔坐标。例如，(0,0)表示原点，(x,y)表示原点向右x个单位和向上y个单位的点。
+
+我们可以用几种方法来代表茱莉亚的观点:
+
+我们可以把坐标分别存储在两个变量x和y中。
+
+我们可以将坐标作为元素存储在数组或元组中。
+
+我们可以创建一个新类型来将点表示为对象。
+
+创建新类型比其他选项更复杂，但它的优势很快就会显现出来。
+
+程序员定义的复合类型也称为结构体。点的结构定义如下:
+```julia
+struct Point
+    x
+    y
+end
+```
+标头指示新结构称为Point。主体定义了结构的属性或字段。Point结构体有两个字段:x和y。
+
+结构体就像创建对象的工厂。要创建一个点，可以调用point，就像它是一个函数，将字段的值作为参数一样。当Point用作函数时，它被称为构造函数。
+```julia
+julia> p = Point(3.0, 4.0)
+Point(3.0, 4.0)
+```
+返回值是一个Point对象的引用，我们将它赋值给p。
+
+创建一个新的对象被称为实例化，这个对象就是该类型的一个实例。
+
+当您打印一个实例时，Julia会告诉您它属于什么类型以及属性的值是什么。
+
+每个对象都是某种类型的实例，因此“对象”和“实例”是可以互换的。但在本章中，我使用“实例”来表示我正在讨论的是程序员定义的类型。
+
+## Structs are Immutable
+您可以使用`.`符号:
+```julia
+julia> x = p.x
+3.0
+julia> p.y
+4.0
+```
+表达式p.x的意思是“到p所指向的对象并获取x的值”。在这个例子中，我们将该值分配给一个名为x的变量。变量x和字段x之间没有冲突。
+
+可以在任何表达式中使用点表示法。例如:
+```julia
+julia> distance = sqrt(p.x^2 + p.y^2)
+5.0
+```
+然而，结构体在默认情况下是不可变的，在构造后字段不能改变值:
+```julia
+julia> p.y = 1.0
+ERROR: setfield! immutable struct of type Point cannot be changed
+```
+乍一看，这似乎有些奇怪，但它有几个优点:
+
+这样会更有效率。
+
+不能违反类型构造函数提供的不变量(请参阅构造函数)。
+
+使用不可变对象的代码更容易推理。
+
+## Mutable Structs
+在需要的地方，可变复合类型可以用关键字`mutable struct`声明。可变点的定义如下:
+
+```julia
+mutable struct MPoint
+    x
+    y
+end
+```
+你可以使用点符号给可变结构的一个实例赋值:
+```julia
+julia> blank = MPoint(0.0, 0.0)
+MPoint(0.0, 0.0)
+julia> blank.x = 3.0
+3.0
+julia> blank.y = 4.0
+4.0
+```
+## Rectangles
+有时一个对象的字段应该是什么是很明显的，但其他时候你必须做出决定。例如，假设您正在设计一个类型来表示矩形。您将使用哪些字段来指定矩形的位置和大小?你可以忽略角度;为了简单起见，假设矩形要么是垂直的，要么是水平的。
+
+至少有两种可能:
+
+您可以指定矩形的一个角(或中心)、宽度和高度。
+
+你可以指定两个相反的角。
+
+在这一点上很难说哪一个比另一个更好，所以我们将实现第一个，只是作为一个例子。
+```julia
+"""
+Represents a rectangle.
+
+fields: width, height, corner.
+"""
+struct Rectangle
+    width
+    height
+    corner
+end
+```
+文档字符串列出字段:宽度和高度是数字;corner是指定左下角的Point对象。
+
+为了表示一个矩形，你必须实例化一个矩形对象:
+```julia
+julia> origin = MPoint(0.0, 0.0)
+MPoint(0.0, 0.0)
+julia> box = Rectangle(100.0, 200.0, origin)
+Rectangle(100.0, 200.0, MPoint(0.0, 0.0))
+```
+## Instances as Arguments
+你可以用通常的方式传递一个实例作为参数。例如:
+```julia
+function printpoint(p)
+    println("($(p.x), $(p.y))")
+end
+```
+printpoint以一个点作为参数并以数学符号显示它。要调用它，你可以传递p作为参数:
+```julia
+julia> printpoint(blank)
+(3.0, 4.0)
+```
+## Instances as Return Values
+函数可以返回实例。例如，findcenter以一个矩形作为参数，并返回一个包含矩形中心坐标的点:
+```julia
+function findcenter(rect)
+    Point(rect.corner.x + rect.width / 2, rect.corner.y + rect.height / 2)
+end
+```
+rect.corner的表达式。x表示:“转到矩形所指的对象，选择名为corner的字段;然后转到该对象并选择名为x的字段。”
+
+下面是一个传递box作为参数并将结果点赋值到中心的例子:
+```julia
+julia> center = findcenter(box)
+Point(51.0, 102.0)
+```
+## Copying
+混叠可能会使程序难以阅读，因为在一个地方的更改可能会在另一个地方产生意想不到的影响。跟踪所有可能引用给定对象的变量是很困难的。
+
+复制对象通常是替代混叠的一种方法。Julia提供了一个名为deepcopy的函数，可以复制任何对象:
+```julia
+julia> p1 = MPoint(3.0, 4.0)
+MPoint(3.0, 4.0)
+julia> p2 = deepcopy(p1)
+MPoint(3.0, 4.0)
+julia> p1 ≡ p2
+false
+julia> p1 == p2
+false
+```
+≡运算符表明p1和p2不是同一个对象，这正是我们所期望的。但您可能期望==为真，因为这些点包含相同的数据。在这种情况下，你会失望地发现，对于可变对象，==操作符的默认行为与===操作符相同;它检查对象标识，而不是对象等价。这是因为对于可变复合类型，Julia不知道什么是等效的。至少，现在还没有。
+
+# Structs and Functions
+现在我们知道了如何创建新的复合类型，下一步是编写函数，将程序员定义的对象作为参数并返回它们作为结果。在本章中，我还介绍了“函数式编程风格”和两个新的程序开发计划。
+## Time
+作为复合类型的另一个例子，我们将定义一个名为MyTime的结构体，它记录一天中的时间。结构体的定义是这样的:
+```julia
+"""
+Represents the time of day.
+
+fields: hour, minute, second
+"""
+struct MyTime
+    hour
+    minute
+    second
+end
+```
+在Julia中已经使用了名字时间，为了避免名字冲突，我选择了`MyTime`。我们可以创建一个新的MyTime对象:
+```julia
+julia> time = MyTime(11, 59, 30)
+MyTime(11, 59, 30)
+```
+## Pure Functions
+在接下来的几节中，我们将编写两个添加时间值的函数。它们演示了两种函数:纯函数和修饰符。它们还展示了一个开发计划，我将其称为原型和补丁，这是一种解决复杂问题的方法，即从简单的原型开始，逐步处理复杂问题。
+
+下面是一个简单的addtime原型:
+```julia
+function addtime(t1, t2)
+    MyTime(t1.hour + t2.hour, t1.minute + t2.minute, t1.second + t2.second)
+end
+```
+该函数创建一个新的MyTime对象，初始化它的字段，并返回对新对象的引用。这被称为纯函数，因为它不修改作为参数传递给它的任何对象，而且它没有任何效果，比如显示值或获取用户输入，而只是返回一个值。
+
+为了测试这个函数，我将创建两个MyTime对象:start包含电影的开始时间，如Monty Python和Holy Grail, duration包含电影的运行时间，即1小时35分钟。
+
+addtime计算电影何时完成。
+```julia
+julia> start = MyTime(9, 45, 0);
+
+julia> duration = MyTime(1, 35, 0);
+
+julia> done = addtime(start, duration);
+
+julia> printtime(done)
+10:80:00
+```
+结果，10:80:00可能不是你所希望的。问题是这个函数不处理秒数或分钟数加起来超过60的情况。当这种情况发生时，我们必须把额外的秒“带入”分钟栏，或者把额外的分钟“带入”小时栏。这是一个改进的版本:
+```julia
+function addtime(t1, t2)
+    second = t1.second + t2.second
+    minute = t1.minute + t2.minute
+    hour = t1.hour + t2.hour
+    if second >= 60
+        second -= 60
+        minute += 1
+    end
+    if minute >= 60
+        minute -= 60
+        hour += 1
+    end
+    MyTime(hour, minute, second)
+end
+```
+虽然这个函数是正确的，但它开始变大了。稍后我们将看到一个较短的替代方案。
+## Modifiers
+有时，函数可以将获取的对象修改为参数。在这种情况下，更改对调用者是可见的。以这种方式工作的函数称为修饰符。
+
+增量!，它向MyTime对象添加给定的秒数，可以作为修饰符自然地编写。以下是一个初稿:
+```julia
+function increment!(time, seconds)
+    time.second += seconds
+    if time.second >= 60
+        time.second -= 60
+        time.minute += 1
+    end
+    if time.minute >= 60
+        time.minute -= 60
+        time.hour += 1
+    end
+end
+```
+第一行执行基本操作;余数处理我们之前见过的特殊情况。
+
+这个函数正确吗?如果秒远大于60秒会怎样?
+
+在这种情况下，携带一次是不够的;我们必须一直这样做，直到时间到来。二是小于六十。一种解决方案是用while语句替换if语句。这将使函数正确，但不是很有效。
+## Prototyping Versus Planning
+我正在演示的开发计划叫做“原型和补丁”。对于每个函数，我都编写了一个原型，执行基本的计算，然后测试它，一路修补错误。
+
+这种方法是有效的，特别是在您还没有深入了解问题的情况下。但是，增量修正可能会生成不必要的复杂代码(因为它处理许多特殊情况)和不可靠的代码(因为很难知道您是否已经找到了所有的错误)。
+
+另一种选择是设计开发，在设计开发中，对问题的高层次了解可以使编程变得更容易。在这种情况下，时间对象实际上是一个以60为基数的三位数(参见https://en.wikipedia.org/wiki/Sexagesimal)!第二个属性是“一列”，分钟属性是“六十列”，小时属性是“三百六十列”。
+
+当我们写addtime和increment!我们实际上是在以60为底做加法，这就是为什么我们必须从一列进到下一列。
+
+这个观察结果提出了解决整个问题的另一种方法——我们可以将MyTime对象转换为整数，并利用计算机知道如何进行整数运算这一事实。
+
+下面是一个将mytimes转换为整数的函数:
+```julia
+function timetoint(time)
+    minutes = time.hour * 60 + time.minute
+    seconds = minutes * 60 + time.second
+end
+```
+下面是一个将整数转换为MyTime的函数(回想一下，divrem将第一个参数除以第二个，并以元组的形式返回商和余数):
+```julia
+function inttotime(seconds)
+    (minutes, second) = divrem(seconds, 60)
+    hour, minute = divrem(minutes, 60)
+    MyTime(hour, minute, second)
+end
+```
+您可能需要考虑一下，并运行一些测试，以说服自己这些函数是正确的。测试它们的一种方法是对x的多个值检查timetoint(inttotime(x)) == x。这是一致性检查的一个例子。
+
+一旦你确信它们是正确的，你就可以用它们重写addtime:
+```julia
+function addtime(t1, t2)
+    seconds = timetoint(t1) + timetoint(t2)
+    inttotime(seconds)
+end
+```
+这个版本比原始版本短，也更容易验证。
+
+## Multiple Dispatch
+在Julia中，您可以编写可以操作不同类型的代码。这被称为泛型编程。
+
+在这一章中，我将讨论Julia中类型声明的使用，并介绍方法，这些方法是根据函数参数的类型实现函数的不同行为的方法。这称为多分派。
+## Type Declarations
+`::`运算符将类型注释附加到表达式和变量上:
+
+```julia
+julia> (1 + 2) :: Float64
+ERROR: TypeError: in typeassert, expected Float64, got Int64
+julia> (1 + 2) :: Int64
+3
+```
+这有助于确认您的程序以您期望的方式工作。
+
+`::`操作符也可以追加到赋值操作的左侧，或者作为声明的一部分。
+```julia
+julia> function returnfloat()
+           x::Float64 = 100
+           x
+       end
+returnfloat (generic function with 1 method)
+julia> x = returnfloat()
+100.0
+julia> typeof(x)
+Float64
+```
+变量x的类型总是Float64，如果需要，该值会被转换为浮点数。
+
+类型注释也可以附加到函数定义的头文件中:
+```julia
+function sinc(x)::Float64
+    if x == 0
+        return 1
+    end
+    sin(x)/(x)
+end
+```
+sinc的返回值总是被转换为Float64类型。
+
+当省略类型时，Julia中的默认行为是允许值为任何类型(any)。
+## Methods
+在结构体和函数中，我们定义了一个名为MyTime的结构体，而在Time中，我们编写了一个名为printtime的函数:
+```julia
+using Printf
+
+struct MyTime
+    hour :: Int64
+    minute :: Int64
+    second :: Int64
+end
+
+function printtime(time)
+    @printf("%02d:%02d:%02d", time.hour, time.minute, time.second)
+end
+```
+如您所见，出于性能考虑，类型声明可以也应该添加到结构定义中的字段中。
+
+要调用这个函数，你必须传递一个MyTime对象作为参数:
+```julia
+julia> start = MyTime(9, 45, 0)
+MyTime(9, 45, 0)
+julia> printtime(start)
+09:45:00
+```
+要向printtime函数添加一个只接受`MyTime`对象作为实参的方法，只需在函数定义中的实参time后面加上`::`和`MyTime`:
+```julia
+function printtime(time::MyTime)
+    @printf("%02d:%02d:%02d", time.hour, time.minute, time.second)
+end
+```
+方法是带有特定签名的函数定义:printtime有一个MyTime类型的参数。
+
+使用MyTime对象调用printtime函数会产生相同的结果:
+```julia
+julia> printtime(start)
+09:45:00
+```
+现在我们可以重新定义不带::type注释的第一个方法，允许任何类型的参数:
+```julia
+function printtime(time)
+    println("I don't know how to print the argument time.")
+end
+```
+如果你用一个不同于MyTime的对象来调用printtime函数，你会得到:
+```julia
+julia> printtime(150)
+I don't know how to print the argument time.
+```
+## Additional Examples
+以下是为指定参数而重写的increment(来自修饰符)版本:
+```julia
+function increment(time::MyTime, seconds::Int64)
+    seconds += timetoint(time)
+    inttotime(seconds)
+end
+```
+注意，现在它是一个纯函数，而不是修饰符。
+
+下面是如何调用increment:
+```julia
+julia> start = MyTime(9, 45, 0)
+MyTime(9, 45, 0)
+julia> increment(start, 1337)
+MyTime(10, 7, 17)
+```
+如果参数的顺序不对，就会出现错误
+```julia
+julia> increment(1337, start)
+ERROR: MethodError: no method matching increment(::Int64, ::MyTime)
+```
+该方法的签名是increment(time::MyTime, seconds::Int64)，而不是increment(seconds::Int64, time::MyTime)。
+
+重写isafter以只对MyTime对象起作用也很容易
+```julia
+function isafter(t1::MyTime, t2::MyTime)
+    (t1.hour, t1.minute, t1.second) > (t2.hour, t2.minute, t2.second)
+end
+```
+顺便说一下，可选参数被实现为多个方法定义的语法。例如，这个定义:
+```julia
+function f(a=1, b=2)
+    a + 2b
+end
+```
+翻译成以下三种方法:
+```julia
+f(a, b) = a + 2b
+f(a) = f(a, 2)
+f() = f(1, 2)
+```
+这些表达式是有效的Julia方法定义。这是定义函数/方法的速记符号。
+
+## Constructors
+构造函数是用来创建对象的特殊函数。MyTime的默认构造函数方法有以下签名:
+```julia
+MyTime(hour, minute, second)
+MyTime(hour::Int64, minute::Int64, second::Int64)
+```
+我们也可以添加自己的外部构造函数方法:
+```julia
+function MyTime(time::MyTime)
+    MyTime(time.hour, time.minute, time.second)
+end
+```
+这个方法被称为复制构造函数，因为新的MyTime对象是它的参数的副本。
+
+为了强制不变量，我们需要内部构造函数方法
+```julia
+struct MyTime
+    hour :: Int64
+    minute :: Int64
+    second :: Int64
+    function MyTime(hour::Int64=0, minute::Int64=0, second::Int64=0)
+        @assert(0 ≤ minute < 60, "Minute is not between 0 and 60.")
+        @assert(0 ≤ second < 60, "Second is not between 0 and 60.")
+        new(hour, minute, second)
+    end
+end
+```
+结构MyTime现在有4个内部构造函数方法:
+```julia
+MyTime()
+MyTime(hour::Int64)
+MyTime(hour::Int64, minute::Int64)
+MyTime(hour::Int64, minute::Int64, second::Int64)
+```
+内部构造函数方法总是在类型声明块中定义，它可以访问名为new的特殊函数，该函数创建新声明类型的对象。
+第二个没有局部函数new参数的方法存在:
+```julia
+mutable struct MyTime
+    hour :: Int
+    minute :: Int
+    second :: Int
+    function MyTime(hour::Int64=0, minute::Int64=0, second::Int64=0)
+        @assert(0 ≤ minute < 60, "Minute is between 0 and 60.")
+        @assert(0 ≤ second < 60, "Second is between 0 and 60.")
+        time = new()
+        time.hour = hour
+        time.minute = minute
+        time.second = second
+        time
+    end
+end
+```
+这允许构造递归的数据结构，即一个结构，其中一个字段是结构本身。在这种情况下，结构必须是可变的，因为它的字段在实例化后被修改。
+
+## `show`
+`show`是一个特殊的函数，它返回对象的字符串表示形式。例如，下面是MyTime对象的show方法
+```julia
+using Printf
+
+function Base.show(io::IO, time::MyTime)
+    @printf(io, "%02d:%02d:%02d", time.hour, time.minute, time.second)
+end
+```
+前缀Base是必需的，因为我们想要向Base中添加一个新方法。显示功能。
+
+当打印一个对象时，Julia调用show函数:
+```julia
+julia> time = MyTime(9, 45)
+09:45:00
+```
+当我编写新的复合类型时，我几乎总是从编写外部构造函数开始，这使得更容易实例化对象和显示对象，这对调试很有用。
+
+## Operator Overloading
+通过定义操作符方法，可以在程序员定义的类型上指定操作符的行为。例如，如果定义了一个名为+的方法，并带有两个MyTime参数，则可以在MyTime对象上使用+操作符。
+
+定义可能是这样的
+```julia
+import Base.+
+
+function +(t1::MyTime, t2::MyTime)
+    seconds = timetoint(t1) + timetoint(t2)
+    inttotime(seconds)
+end
+```
+import语句将+操作符添加到局部作用域，以便可以添加方法。
+
+你可以这样使用它
+```julia
+julia> start = MyTime(9, 45)
+09:45:00
+julia> duration = MyTime(1, 35, 0)
+01:35:00
+julia> start + duration
+11:20:00
+```
+当您将+操作符应用到MyTime对象时，Julia调用新添加的方法。当REPL显示结果时，Julia调用show。所以在幕后发生了很多事情!
+
+添加操作符的行为以使其与程序员定义的类型一起工作称为操作符重载。
+## Multiple Dispatch
+在上一节中，我们添加了两个MyTime对象，但您可能还想向MyTime对象添加一个整数:
+```julia
+function +(time::MyTime, seconds::Int64)
+    increment(time, seconds)
+end
+```
+下面是一个使用+操作符和MyTime对象和整数的示例
+```julia
+julia> start = MyTime(9, 45)
+09:45:00
+julia> start + 1337
+10:07:17
+```
+加法是一个交换算子，所以我们必须添加另一种方法。
+```julia
+function +(seconds::Int64, time::MyTime)
+  time + seconds
+end
+```
+我们得到了相同的结果
+```julia
+julia> 1337 + start
+10:07:17
+```
+在应用函数时选择执行哪个方法称为dispatch。Julia允许调度进程根据给定参数的数量和函数所有参数的类型来选择调用函数的哪一个方法。使用函数的所有参数来选择应该调用哪个方法称为多重派发。
+
+## Generic Programming
+在必要时，多重分派是有用的，但(幸运的是)它并不总是必要的。通常，您可以通过编写正确处理不同类型实参的函数来避免这种情况。
+
+我们为字符串编写的许多函数也适用于其他序列类型。例如，在Dictionary作为计数器的集合中，我们使用histgram来计算每个字母在一个单词中出现的次数。
+```julia
+function histogram(s)
+    d = Dict()
+    for c in s
+        if c ∉ keys(d)
+            d[c] = 1
+        else
+            d[c] += 1
+        end
+    end
+    d
+end
+```
+这个函数也适用于列表、元组，甚至字典，只要`s`中的元素是可散列的，因此它们可以用作`d`中的键。
+```julia
+julia> t = ("spam", "egg", "spam", "spam", "bacon", "spam")
+("spam", "egg", "spam", "spam", "bacon", "spam")
+julia> histogram(t)
+Dict{Any,Any} with 3 entries:
+  "bacon" => 1
+  "spam"  => 4
+  "egg"   => 1
+```
+与几种类型一起工作的函数称为多态函数。多态可以促进代码重用。
+
+例如，内置函数sum可以添加序列的元素，只要序列的元素支持添加，它就可以工作。
+
+由于MyTime对象提供了+方法，它们使用sum:
+```julia
+julia> t1 = MyTime(1, 7, 2)
+01:07:02
+julia> t2 = MyTime(1, 5, 8)
+01:05:08
+julia> t3 = MyTime(1, 5, 0)
+01:05:00
+julia> sum((t1, t2, t3))
+03:17:10
+```
+一般来说，如果函数内的所有操作都适用于给定类型，那么函数也适用于该类型。
+
+最好的多态性类型是无意型，在这种类型中，您会发现您已经编写的函数可以应用于您从未计划过的类型。
+
+## Interface and Implementation
+多调度的目标之一是使软件更具可维护性，这意味着当系统的其他部分发生变化时，您可以保持程序工作，并修改程序以满足新的需求。
+
+帮助实现这一目标的设计原则是将接口与实现分开。这意味着带有带有类型注解的参数的方法不应该依赖于该类型的字段如何表示。
+
+例如，在本章中，我们开发了一个表示一天中的某个时间的结构体。参数注释为这种类型的方法包括timetoint、isafter和+。
+
+我们可以用几种方式实现这些方法。实现的细节取决于我们如何表示MyTime。在本章中，MyTime对象的字段包括小时、分钟和秒。
+
+作为一种替代方案，我们可以用一个表示从午夜开始的秒数的整数来替换这些字段。这种实现将使一些函数(如isafter)更容易编写，但使其他函数更难编写。
+
+在部署新类型之后，您可能会发现更好的实现。如果程序的其他部分正在使用您的类型，那么更改接口可能会耗费时间，而且容易出错。
+
+但是如果你仔细地设计接口，你可以在不改变接口的情况下改变实现，这意味着程序的其他部分不必改变。
 
