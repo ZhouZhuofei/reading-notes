@@ -8,6 +8,6 @@ Reading some books and writing idea
     - Mathematical analysis
     - Numerical Analysis
 - Reading
-    - some book notes...
+    - kinetic equation
     .....
     
