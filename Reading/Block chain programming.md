@@ -825,5 +825,10 @@ def encode_base58_checksum(b):
 
 
 
+##### Trade
+
+一个交易包括:
+- 版本号(Version)
+- 输入(Input)
 
 
