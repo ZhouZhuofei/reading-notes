@@ -830,5 +830,9 @@ def encode_base58_checksum(b):
 一个交易包括:
 - 版本号(Version)
 - 输入(Input)
+- 输出(Output)
+- 时间锁(Locktime)
+
+
 
 
